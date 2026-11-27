@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
 jobs:
   build:
-  runs-on: macos-14
-  
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - run: unzip -q RugView-iOS.zip -d ios
