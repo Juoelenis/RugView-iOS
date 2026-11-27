@@ -1,0 +1,21 @@
+name: Build IPA
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip -q RugView-iOS.zip -d ios
+      - run: brew install xcodegen
+      - working-directory: ios
+        run: |
+          xcodegen generate
+          xcodebuild -project RugView.xcodeproj -scheme RugView -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+          mkdir Payload && cp -R build/Build/Products/Release-iphoneos/RugView.app Payload/
+          zip -qr RugView-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RugView-ipa
+          path: ios/RugView-unsigned.ipa
