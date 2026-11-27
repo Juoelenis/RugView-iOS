@@ -1,19 +1,36 @@
 name: Build IPA
 on:
-  push:
   workflow_dispatch:
+  push:
+    paths:
+      - "RugView-iOS.zip"
+      - ".github/workflows/ios.yml"
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - run: unzip -q RugView-iOS.zip -d ios
-      - run: brew install xcodegen
-      - working-directory: ios
+      - name: Unzip project
+        run: unzip -q RugView-iOS.zip -d ios
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build (unsigned)
+        working-directory: ios
         run: |
-          xcodegen generate
-          xcodebuild -project RugView.xcodeproj -scheme RugView -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
-          mkdir Payload && cp -R build/Build/Products/Release-iphoneos/RugView.app Payload/
+          xcodebuild -project RugView.xcodeproj -scheme RugView \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+      - name: Package IPA
+        working-directory: ios
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/RugView.app Payload/
           zip -qr RugView-unsigned.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
